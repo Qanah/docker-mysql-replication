@@ -1,14 +1,11 @@
 #!/bin/bash
 set -e
 
-echo "Building MySQL 8.0 image with the latest changes..."
-docker build -t mysql-replication:8.0-test ../images/mysql-replication/8.0
-
 echo "Starting source-replica replication setup..."
 # Clean up any existing containers
 docker-compose -f docker-compose.source-replica.yml down -v --remove-orphans
 # Start the containers
-docker-compose -f docker-compose.source-replica.yml up -d
+docker-compose -f docker-compose.source-replica.yml up -d --build
 
 echo "Waiting for containers to start and replication to be established (30 seconds)..."
 sleep 30

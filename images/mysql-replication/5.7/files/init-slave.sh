@@ -74,7 +74,7 @@ else
     --hex-blob \
     --all-databases \
     --add-drop-database \
-    --master-data \
+    --set-gtid-purged=ON \
     --flush-logs \
     --flush-privileges \
     | mysql -uroot -p$MYSQL_ROOT_PASSWORD
@@ -101,7 +101,6 @@ else
   while ! check_slave_health; do
     if (( counter >= $REPLICATION_HEALTH_TIMEOUT )); then
       echo ERROR: Replication not healthy, health timeout reached, failing.
-      break
       exit 1
     fi
     let counter=counter+1

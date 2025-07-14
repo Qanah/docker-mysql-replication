@@ -1,0 +1,38 @@
+services:
+  mysql-master:
+    platform: linux/amd64  # Specify platform for Mac ARM compatibility
+    build:
+      context: ../images/mysql-replication/5.7
+      args:
+        - BUILDPLATFORM=linux/amd64
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - REPLICATION_SERVER_ID=1
+      - REPLICATION_SERVER=master
+    ports:
+      - "13306:3306"
+    volumes:
+      - mysql-master-data:/var/lib/mysql
+      - ./init-master.sql:/docker-entrypoint-initdb.d/init-master.sql
+
+  mysql-slave:
+    platform: linux/amd64  # Specify platform for Mac ARM compatibility
+    build:
+      context: ../images/mysql-replication/5.7
+      args:
+        - BUILDPLATFORM=linux/amd64
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - REPLICATION_SERVER_ID=2
+      - REPLICATION_SERVER=slave
+      - MASTER_HOST=mysql-master
+    ports:
+      - "13307:3306"
+    volumes:
+      - mysql-slave-data:/var/lib/mysql
+    depends_on:
+      - mysql-master
+
+volumes:
+  mysql-master-data:
+  mysql-slave-data:

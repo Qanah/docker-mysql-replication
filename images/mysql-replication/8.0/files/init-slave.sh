@@ -46,39 +46,23 @@ else
     SOURCE_AUTO_POSITION=1;"
 fi
 
-# For source-source replication, we skip the mysqldump step to avoid deadlock
-if [ "$REPLICATION_SERVER" = "master" ]; then
-  echo "This is a source-source replication setup. Skipping mysqldump step to avoid deadlock."
-else
-  # Wait for the master to be ready
-  echo "Waiting for $MASTER_HOST to be ready..."
-  max_retries=30
-  retry_count=0
-  while ! mysqladmin ping -h"$MASTER_HOST" -P"$MASTER_PORT" -u"$REPLICATION_USER" -p"$REPLICATION_PASSWORD" --silent &> /dev/null; do
-    retry_count=$((retry_count+1))
-    if [ $retry_count -ge $max_retries ]; then
-      echo "ERROR: Timed out waiting for $MASTER_HOST to be ready after $max_retries attempts."
-      exit 1
-    fi
-    echo "Attempt $retry_count/$max_retries: $MASTER_HOST is not ready yet. Waiting 5 seconds..."
-    sleep 5
-  done
-  echo "$MASTER_HOST is ready. Proceeding with replication setup."
+# Wait for the master to be ready
+echo "Waiting for $MASTER_HOST to be ready..."
+max_retries=30
+retry_count=0
+while ! mysqladmin ping -h"$MASTER_HOST" -P"$MASTER_PORT" -u"$REPLICATION_USER" -p"$REPLICATION_PASSWORD" --silent &> /dev/null; do
+  retry_count=$((retry_count+1))
+  if [ $retry_count -ge $max_retries ]; then
+    echo "ERROR: Timed out waiting for $MASTER_HOST to be ready after $max_retries attempts."
+    exit 1
+  fi
+  echo "Attempt $retry_count/$max_retries: $MASTER_HOST is not ready yet. Waiting 5 seconds..."
+  sleep 5
+done
+echo "$MASTER_HOST is ready. Proceeding with replication setup."
 
-  mysqldump \
-    --protocol=tcp \
-    --user=$REPLICATION_USER \
-    --password=$REPLICATION_PASSWORD \
-    --host=$MASTER_HOST \
-    --port=$MASTER_PORT \
-    --hex-blob \
-    --all-databases \
-    --add-drop-database \
-    --source-data \
-    --flush-logs \
-    --flush-privileges \
-    | mysql -uroot -p$MYSQL_ROOT_PASSWORD
-fi
+# Skip the mysqldump step to avoid issues with PROCESS privilege and mysql system schema
+echo "Skipping mysqldump step to avoid issues with PROCESS privilege and mysql system schema."
 
 echo mysqldump completed.
 
@@ -101,7 +85,6 @@ else
   while ! check_replica_health; do
     if (( counter >= $REPLICATION_HEALTH_TIMEOUT )); then
       echo ERROR: Replication not healthy, health timeout reached, failing.
-      break
       exit 1
     fi
     let counter=counter+1

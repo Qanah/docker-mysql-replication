@@ -157,6 +157,14 @@ cd tests
 
 This script will build a test image, start the containers, and run a series of tests to verify that replication is working correctly from source to replica and that the replica is read-only.
 
+For MySQL 5.7 master-slave replication (on Mac ARM architecture):
+```bash
+cd tests
+./test-master-slave-replication.sh
+```
+
+This script will build a MySQL 5.7 test image with platform compatibility for Mac ARM, start the containers, and run a series of tests to verify that replication is working correctly from master to slave and that the slave is read-only.
+
 ### Monitoring Replication Status
 
 To check the status of replication and ensure it's working correctly, you can use the following commands:

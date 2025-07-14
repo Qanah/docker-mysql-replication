@@ -38,6 +38,7 @@ mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "\
     SHOW VIEW, \
     LOCK TABLES, \
     RELOAD, \
+    PROCESS, \
     REPLICATION SLAVE, \
     REPLICATION CLIENT \
   ON *.* \
@@ -67,6 +68,7 @@ mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "\
     SHOW VIEW, \
     LOCK TABLES, \
     RELOAD, \
+    PROCESS, \
     REPLICATION SLAVE, \
     REPLICATION CLIENT \
   ON *.* \
