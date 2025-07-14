@@ -11,6 +11,11 @@ The MySQL replication images are available in two versions:
 
 Both versions are configured to support replication setups.
 
+### Platform Support
+
+- MySQL 5.7 image: Supports linux/amd64 architecture only
+- MySQL 8.0 image: Supports both linux/amd64 and linux/arm64 architectures
+
 ### Environment Variables
 
 The following environment variables can be used to configure the MySQL replication:
