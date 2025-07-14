@@ -139,14 +139,23 @@ To test that replication is working correctly, you can use the provided test set
    docker-compose -f docker-compose.test-replication.yml down -v
    ```
 
-Alternatively, you can use the provided test script to test source-source replication:
+Alternatively, you can use the provided test scripts to test different replication setups:
 
+For source-source replication (bidirectional):
 ```bash
 cd tests
 ./test-source-source-replication.sh
 ```
 
 This script will build a test image, start the containers, and run a series of tests to verify that replication is working correctly in both directions.
+
+For source-replica replication (unidirectional):
+```bash
+cd tests
+./test-source-replica-replication.sh
+```
+
+This script will build a test image, start the containers, and run a series of tests to verify that replication is working correctly from source to replica and that the replica is read-only.
 
 ### Monitoring Replication Status
 
