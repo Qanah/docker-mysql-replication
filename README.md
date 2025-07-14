@@ -65,7 +65,7 @@ version: '3'
 
 services:
   mysql-master:
-    image: your-dockerhub-username/mysql-replication:5.7-latest
+    image: qanah/mysql-replication:5.7-latest
     environment:
       - MYSQL_ROOT_PASSWORD=root_password
       - REPLICATION_SERVER_ID=1
@@ -76,7 +76,7 @@ services:
       - mysql-master-data:/var/lib/mysql
 
   mysql-slave1:
-    image: your-dockerhub-username/mysql-replication:5.7-latest
+    image: qanah/mysql-replication:5.7-latest
     environment:
       - MYSQL_ROOT_PASSWORD=root_password
       - REPLICATION_SERVER_ID=2
@@ -101,7 +101,7 @@ version: '3'
 
 services:
   mysql-source:
-    image: your-dockerhub-username/mysql-replication:latest  # or 8.0-latest
+    image: qanah/mysql-replication:latest  # or 8.0-latest
     environment:
       - MYSQL_ROOT_PASSWORD=root_password
       - REPLICATION_SERVER_ID=1
@@ -112,7 +112,7 @@ services:
       - mysql-source-data:/var/lib/mysql
 
   mysql-replica1:
-    image: your-dockerhub-username/mysql-replication:latest  # or 8.0-latest
+    image: qanah/mysql-replication:latest  # or 8.0-latest
     environment:
       - MYSQL_ROOT_PASSWORD=root_password
       - REPLICATION_SERVER_ID=2
@@ -137,7 +137,7 @@ version: '3'
 
 services:
   mysql-master1:
-    image: your-dockerhub-username/mysql-replication:5.7-latest
+    image: qanah/mysql-replication:5.7-latest
     environment:
       - MYSQL_ROOT_PASSWORD=root_password
       - REPLICATION_SERVER_ID=1
@@ -149,7 +149,7 @@ services:
       - mysql-master1-data:/var/lib/mysql
 
   mysql-master2:
-    image: your-dockerhub-username/mysql-replication:5.7-latest
+    image: qanah/mysql-replication:5.7-latest
     environment:
       - MYSQL_ROOT_PASSWORD=root_password
       - REPLICATION_SERVER_ID=2
@@ -174,7 +174,7 @@ version: '3'
 
 services:
   mysql-source1:
-    image: your-dockerhub-username/mysql-replication:latest  # or 8.0-latest
+    image: qanah/mysql-replication:latest  # or 8.0-latest
     environment:
       - MYSQL_ROOT_PASSWORD=root_password
       - REPLICATION_SERVER_ID=1
@@ -186,7 +186,7 @@ services:
       - mysql-source1-data:/var/lib/mysql
 
   mysql-source2:
-    image: your-dockerhub-username/mysql-replication:latest  # or 8.0-latest
+    image: qanah/mysql-replication:latest  # or 8.0-latest
     environment:
       - MYSQL_ROOT_PASSWORD=root_password
       - REPLICATION_SERVER_ID=2
@@ -211,7 +211,7 @@ version: '3'
 
 services:
   mysql-master:
-    image: your-dockerhub-username/mysql-replication:5.7-latest
+    image: qanah/mysql-replication:5.7-latest
     environment:
       - MYSQL_ROOT_PASSWORD=root_password
       - REPLICATION_SERVER=master
@@ -221,7 +221,7 @@ services:
       - mysql-master-data:/var/lib/mysql
 
   mysql-slave1:
-    image: your-dockerhub-username/mysql-replication:5.7-latest
+    image: qanah/mysql-replication:5.7-latest
     environment:
       - MYSQL_ROOT_PASSWORD=root_password
       - REPLICATION_SERVER_ID=2
@@ -235,7 +235,7 @@ services:
       - mysql-master
 
   mysql-slave2:
-    image: your-dockerhub-username/mysql-replication:5.7-latest
+    image: qanah/mysql-replication:5.7-latest
     environment:
       - MYSQL_ROOT_PASSWORD=root_password
       - REPLICATION_SERVER_ID=3
