@@ -13,7 +13,6 @@ services:
       - "13306:3306"
     volumes:
       - mysql-master-data:/var/lib/mysql
-      - ./init-master.sql:/docker-entrypoint-initdb.d/init-master.sql
 
   mysql-slave:
     platform: linux/amd64  # Specify platform for Mac ARM compatibility

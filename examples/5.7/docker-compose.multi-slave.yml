@@ -3,6 +3,7 @@ version: '3'
 services:
   mysql-master:
     image: qanah/mysql-replication:5.7-latest
+    platform: linux/amd64 # Specify platform for Mac ARM compatibility
     environment:
       - MYSQL_ROOT_PASSWORD=root_password
       - REPLICATION_SERVER=master
@@ -13,6 +14,7 @@ services:
 
   mysql-slave1:
     image: qanah/mysql-replication:5.7-latest
+    platform: linux/amd64 # Specify platform for Mac ARM compatibility
     environment:
       - MYSQL_ROOT_PASSWORD=root_password
       - REPLICATION_SERVER_ID=2
@@ -27,6 +29,7 @@ services:
 
   mysql-slave2:
     image: qanah/mysql-replication:5.7-latest
+    platform: linux/amd64 # Specify platform for Mac ARM compatibility
     environment:
       - MYSQL_ROOT_PASSWORD=root_password
       - REPLICATION_SERVER_ID=3

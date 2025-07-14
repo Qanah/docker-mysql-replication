@@ -3,10 +3,11 @@ version: '3'
 services:
   mysql-master:
     image: qanah/mysql-replication:5.7-latest
+    platform: linux/amd64 # Specify platform for Mac ARM compatibility
     environment:
       - MYSQL_ROOT_PASSWORD=root_password
       - REPLICATION_SERVER_ID=1
-      # Alternatively, you can use REPLICATION_SERVER=master
+      - REPLICATION_SERVER=master
     ports:
       - "3306:3306"
     volumes:
@@ -14,10 +15,11 @@ services:
 
   mysql-slave1:
     image: qanah/mysql-replication:5.7-latest
+    platform: linux/amd64 # Specify platform for Mac ARM compatibility
     environment:
       - MYSQL_ROOT_PASSWORD=root_password
       - REPLICATION_SERVER_ID=2
-      # Alternatively, you can use REPLICATION_SERVER=slave
+      - REPLICATION_SERVER=slave
       - MASTER_HOST=mysql-master
     ports:
       - "3307:3306"
