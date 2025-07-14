@@ -1,0 +1,31 @@
+version: '3'
+
+services:
+  mysql-master:
+    image: qanah/mysql-replication:5.7-latest
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - REPLICATION_SERVER_ID=1
+      # Alternatively, you can use REPLICATION_SERVER=master
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-master-data:/var/lib/mysql
+
+  mysql-slave1:
+    image: qanah/mysql-replication:5.7-latest
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - REPLICATION_SERVER_ID=2
+      # Alternatively, you can use REPLICATION_SERVER=slave
+      - MASTER_HOST=mysql-master
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-slave1-data:/var/lib/mysql
+    depends_on:
+      - mysql-master
+
+volumes:
+  mysql-master-data:
+  mysql-slave1-data:

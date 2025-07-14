@@ -13,14 +13,48 @@ innodb_flush_method = O_DIRECT
 innodb-flush-log-at-trx-commit = 0
 transaction-isolation = READ-COMMITTED
 max_allowed_packet = 128M
+# Enable GTID mode
+gtid_mode=ON
+enforce_gtid_consistency=ON
 EOF
 
 # Use REPLICATION_SERVER_ID from environment variable
 export SERVER_ID=${REPLICATION_SERVER_ID:-1}
 export REPLICATION_SERVER=${REPLICATION_SERVER:-}
 
-# If REPLICATION_SERVER is set to "master" or SERVER_ID is 1 and REPLICATION_SERVER is not "slave", configure as master
-if [ "$REPLICATION_SERVER" = "master" ] || ([ "$SERVER_ID" = "1" ] && [ "$REPLICATION_SERVER" != "slave" ]); then
+# If REPLICATION_SERVER is set to "master" and MASTER_HOST is set, configure as both master and slave
+if [ "$REPLICATION_SERVER" = "master" ] && [ ! -z "$MASTER_HOST" ]; then
+  # Configure as master
+  cat >/docker-entrypoint-initdb.d/init-master.sh  <<'EOF'
+#!/bin/bash
+
+echo Creating replication user ...
+mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "\
+  GRANT \
+    FILE, \
+    SELECT, \
+    SHOW VIEW, \
+    LOCK TABLES, \
+    RELOAD, \
+    REPLICATION SLAVE, \
+    REPLICATION CLIENT \
+  ON *.* \
+  TO '$REPLICATION_USER'@'%' \
+  IDENTIFIED BY '$REPLICATION_PASSWORD'; \
+  FLUSH PRIVILEGES; \
+"
+EOF
+  # Also configure as slave
+  cp -v /init-slave.sh /docker-entrypoint-initdb.d/
+  cat > /etc/mysql/mysql.conf.d/repl-slave.cnf << EOF
+[mysqld]
+log-slave-updates
+master-info-repository=TABLE
+relay-log-info-repository=TABLE
+relay-log-recovery=1
+EOF
+# If REPLICATION_SERVER is set to "master" or SERVER_ID is 1 and REPLICATION_SERVER is not "slave", configure as master only
+elif [ "$REPLICATION_SERVER" = "master" ] || ([ "$SERVER_ID" = "1" ] && [ "$REPLICATION_SERVER" != "slave" ]); then
   cat >/docker-entrypoint-initdb.d/init-master.sh  <<'EOF'
 #!/bin/bash
 

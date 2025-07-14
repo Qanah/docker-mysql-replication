@@ -1,0 +1,32 @@
+version: '3'
+
+services:
+  mysql-source1:
+    image: qanah/mysql-replication:8.0-latest
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - REPLICATION_SERVER_ID=1
+      - REPLICATION_SERVER=master
+      - MASTER_HOST=mysql-source2
+    ports:
+      - "13306:3306"
+    volumes:
+      - mysql-source1-data:/var/lib/mysql
+
+  mysql-source2:
+    image: qanah/mysql-replication:8.0-latest
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - REPLICATION_SERVER_ID=2
+      - REPLICATION_SERVER=master
+      - MASTER_HOST=mysql-source1
+    ports:
+      - "13307:3306"
+    volumes:
+      - mysql-source2-data:/var/lib/mysql
+    depends_on:
+      - mysql-source1
+
+volumes:
+  mysql-source1-data:
+  mysql-source2-data:

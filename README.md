@@ -58,201 +58,153 @@ For master-master replication, set `REPLICATION_SERVER=master` for both servers 
 
 ### Example Usage
 
+Several example configurations are provided in the `examples` directory:
+
 #### Basic Master-Slave Setup (MySQL 5.7)
 
-```yaml
-version: '3'
-
-services:
-  mysql-master:
-    image: qanah/mysql-replication:5.7-latest
-    environment:
-      - MYSQL_ROOT_PASSWORD=root_password
-      - REPLICATION_SERVER_ID=1
-      # Alternatively, you can use REPLICATION_SERVER=master
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql-master-data:/var/lib/mysql
-
-  mysql-slave1:
-    image: qanah/mysql-replication:5.7-latest
-    environment:
-      - MYSQL_ROOT_PASSWORD=root_password
-      - REPLICATION_SERVER_ID=2
-      # Alternatively, you can use REPLICATION_SERVER=slave
-      - MASTER_HOST=mysql-master
-    ports:
-      - "3307:3306"
-    volumes:
-      - mysql-slave1-data:/var/lib/mysql
-    depends_on:
-      - mysql-master
-
-volumes:
-  mysql-master-data:
-  mysql-slave1-data:
-```
+See [docker-compose.master-slave.yml](examples/docker-compose.master-slave.yml)
 
 #### Basic Source-Replica Setup (MySQL 8.0)
 
-```yaml
-version: '3'
-
-services:
-  mysql-source:
-    image: qanah/mysql-replication:latest  # or 8.0-latest
-    environment:
-      - MYSQL_ROOT_PASSWORD=root_password
-      - REPLICATION_SERVER_ID=1
-      # Alternatively, you can use REPLICATION_SERVER=master
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql-source-data:/var/lib/mysql
-
-  mysql-replica1:
-    image: qanah/mysql-replication:latest  # or 8.0-latest
-    environment:
-      - MYSQL_ROOT_PASSWORD=root_password
-      - REPLICATION_SERVER_ID=2
-      # Alternatively, you can use REPLICATION_SERVER=slave
-      - MASTER_HOST=mysql-source
-    ports:
-      - "3307:3306"
-    volumes:
-      - mysql-replica1-data:/var/lib/mysql
-    depends_on:
-      - mysql-source
-
-volumes:
-  mysql-source-data:
-  mysql-replica1-data:
-```
+See [docker-compose.source-replica.yml](examples/docker-compose.source-replica.yml)
 
 #### Master-Master Replication (MySQL 5.7)
 
-```yaml
-version: '3'
-
-services:
-  mysql-master1:
-    image: qanah/mysql-replication:5.7-latest
-    environment:
-      - MYSQL_ROOT_PASSWORD=root_password
-      - REPLICATION_SERVER_ID=1
-      - REPLICATION_SERVER=master
-      - MASTER_HOST=mysql-master2
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql-master1-data:/var/lib/mysql
-
-  mysql-master2:
-    image: qanah/mysql-replication:5.7-latest
-    environment:
-      - MYSQL_ROOT_PASSWORD=root_password
-      - REPLICATION_SERVER_ID=2
-      - REPLICATION_SERVER=master
-      - MASTER_HOST=mysql-master1
-    ports:
-      - "3307:3306"
-    volumes:
-      - mysql-master2-data:/var/lib/mysql
-    depends_on:
-      - mysql-master1
-
-volumes:
-  mysql-master1-data:
-  mysql-master2-data:
-```
+See [docker-compose.master-master.yml](examples/docker-compose.master-master.yml)
 
 #### Source-Source Replication (MySQL 8.0)
 
-```yaml
-version: '3'
-
-services:
-  mysql-source1:
-    image: qanah/mysql-replication:latest  # or 8.0-latest
-    environment:
-      - MYSQL_ROOT_PASSWORD=root_password
-      - REPLICATION_SERVER_ID=1
-      - REPLICATION_SERVER=master
-      - MASTER_HOST=mysql-source2
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql-source1-data:/var/lib/mysql
-
-  mysql-source2:
-    image: qanah/mysql-replication:latest  # or 8.0-latest
-    environment:
-      - MYSQL_ROOT_PASSWORD=root_password
-      - REPLICATION_SERVER_ID=2
-      - REPLICATION_SERVER=master
-      - MASTER_HOST=mysql-source1
-    ports:
-      - "3307:3306"
-    volumes:
-      - mysql-source2-data:/var/lib/mysql
-    depends_on:
-      - mysql-source1
-
-volumes:
-  mysql-source1-data:
-  mysql-source2-data:
-```
+See [docker-compose.source-source.yml](examples/docker-compose.source-source.yml)
 
 #### Multi-Slave Configuration (MySQL 5.7)
 
-```yaml
-version: '3'
+See [docker-compose.multi-slave.yml](examples/docker-compose.multi-slave.yml)
 
-services:
-  mysql-master:
-    image: qanah/mysql-replication:5.7-latest
-    environment:
-      - MYSQL_ROOT_PASSWORD=root_password
-      - REPLICATION_SERVER=master
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql-master-data:/var/lib/mysql
+### Testing Replication
 
-  mysql-slave1:
-    image: qanah/mysql-replication:5.7-latest
-    environment:
-      - MYSQL_ROOT_PASSWORD=root_password
-      - REPLICATION_SERVER_ID=2
-      - REPLICATION_SERVER=slave
-      - MASTER_HOST=mysql-master
-    ports:
-      - "3307:3306"
-    volumes:
-      - mysql-slave1-data:/var/lib/mysql
-    depends_on:
-      - mysql-master
+To test that replication is working correctly, you can use the provided test setup:
 
-  mysql-slave2:
-    image: qanah/mysql-replication:5.7-latest
-    environment:
-      - MYSQL_ROOT_PASSWORD=root_password
-      - REPLICATION_SERVER_ID=3
-      - REPLICATION_SERVER=slave
-      - MASTER_HOST=mysql-master
-    ports:
-      - "3308:3306"
-    volumes:
-      - mysql-slave2-data:/var/lib/mysql
-    depends_on:
-      - mysql-master
+1. Navigate to the tests directory:
+   ```bash
+   cd tests
+   ```
 
-volumes:
-  mysql-master-data:
-  mysql-slave1-data:
-  mysql-slave2-data:
+2. Start the test replication setup:
+   ```bash
+   docker-compose -f docker-compose.test-replication.yml up -d
+   ```
+
+3. Wait for the containers to start and replication to be established (usually takes about 30 seconds).
+
+4. Connect to the master database and insert some data:
+   ```bash
+   docker exec -it tests_mysql-master_1 mysql -uroot -proot_password
+   ```
+
+   ```sql
+   USE test_db;
+   INSERT INTO test_table (name) VALUES ('New Record from Master');
+   SELECT * FROM test_table;
+   EXIT;
+   ```
+
+5. Connect to the slave database and verify that the data has been replicated:
+   ```bash
+   docker exec -it tests_mysql-slave_1 mysql -uroot -proot_password
+   ```
+
+   ```sql
+   USE test_db;
+   SELECT * FROM test_table;
+   EXIT;
+   ```
+
+   You should see the same records on the slave as on the master, including the new record you just inserted.
+
+6. To test that changes on the slave are not allowed (read-only mode):
+   ```bash
+   docker exec -it tests_mysql-slave_1 mysql -uroot -proot_password
+   ```
+
+   ```sql
+   USE test_db;
+   INSERT INTO test_table (name) VALUES ('This should fail');
+   EXIT;
+   ```
+
+   This should fail with an error message indicating that the slave is read-only.
+
+7. Clean up when you're done:
+   ```bash
+   docker-compose -f docker-compose.test-replication.yml down -v
+   ```
+
+Alternatively, you can use the provided test script to test source-source replication:
+
+```bash
+cd tests
+./test-source-source-replication.sh
 ```
+
+This script will build a test image, start the containers, and run a series of tests to verify that replication is working correctly in both directions.
+
+### Monitoring Replication Status
+
+To check the status of replication and ensure it's working correctly, you can use the following commands:
+
+#### MySQL 5.7 (Master-Slave)
+
+1. Connect to the slave server:
+   ```bash
+   docker exec -it <container_name> mysql -uroot -p<password>
+   ```
+
+2. Check the replication status:
+   ```sql
+   SHOW SLAVE STATUS\G
+   ```
+
+   Key indicators to look for:
+   - `Slave_IO_Running: Yes` - Indicates that the slave is connected to the master and receiving binary log events
+   - `Slave_SQL_Running: Yes` - Indicates that the slave is applying the received events
+   - `Seconds_Behind_Master: 0` (or a low number) - Indicates how far behind the slave is in processing updates
+   - `Last_Error: ` - Should be empty; if not, it shows the last error that caused replication to stop
+
+#### MySQL 8.0 (Source-Replica)
+
+1. Connect to the replica server:
+   ```bash
+   docker exec -it <container_name> mysql -uroot -p<password>
+   ```
+
+2. Check the replication status:
+   ```sql
+   SHOW REPLICA STATUS\G
+   ```
+
+   Key indicators to look for:
+   - `Replica_IO_Running: Yes` - Indicates that the replica is connected to the source and receiving binary log events
+   - `Replica_SQL_Running: Yes` - Indicates that the replica is applying the received events
+   - `Seconds_Behind_Source: 0` (or a low number) - Indicates how far behind the replica is in processing updates
+   - `Last_Error: ` - Should be empty; if not, it shows the last error that caused replication to stop
+
+#### Troubleshooting Replication Issues
+
+If replication is not working correctly, check the following:
+
+1. Ensure the master/source server is running and accessible from the slave/replica
+2. Verify that the replication user has the correct permissions
+3. Check for any errors in the replication status output
+4. Restart replication if needed:
+   ```sql
+   -- MySQL 5.7
+   STOP SLAVE;
+   START SLAVE;
+
+   -- MySQL 8.0
+   STOP REPLICA;
+   START REPLICA;
+   ```
 
 ## CI/CD Pipeline
 
