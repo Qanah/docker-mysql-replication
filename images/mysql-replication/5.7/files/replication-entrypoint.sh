@@ -17,9 +17,10 @@ EOF
 
 # Use REPLICATION_SERVER_ID from environment variable
 export SERVER_ID=${REPLICATION_SERVER_ID:-1}
+export REPLICATION_SERVER=${REPLICATION_SERVER:-}
 
-# If SERVER_ID is 1, configure as master
-if [ "$SERVER_ID" = "1" ]; then
+# If REPLICATION_SERVER is set to "master" or SERVER_ID is 1 and REPLICATION_SERVER is not "slave", configure as master
+if [ "$REPLICATION_SERVER" = "master" ] || ([ "$SERVER_ID" = "1" ] && [ "$REPLICATION_SERVER" != "slave" ]); then
   cat >/docker-entrypoint-initdb.d/init-master.sh  <<'EOF'
 #!/bin/bash
 
@@ -39,8 +40,8 @@ mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "\
   FLUSH PRIVILEGES; \
 "
 EOF
-# If SERVER_ID is not 1 and MASTER_HOST is set, configure as slave
-elif [ ! -z "$MASTER_HOST" ]; then
+# If REPLICATION_SERVER is set to "slave" or (SERVER_ID is not 1 and MASTER_HOST is set), configure as slave
+elif [ "$REPLICATION_SERVER" = "slave" ] || ([ "$SERVER_ID" != "1" ] && [ ! -z "$MASTER_HOST" ]); then
   cp -v /init-slave.sh /docker-entrypoint-initdb.d/
   cat > /etc/mysql/mysql.conf.d/repl-slave.cnf << EOF
 [mysqld]
@@ -49,11 +50,12 @@ master-info-repository=TABLE
 relay-log-info-repository=TABLE
 relay-log-recovery=1
 EOF
-# If SERVER_ID is not 1 but MASTER_HOST is not set, warn user
+# If neither master nor slave configuration is triggered, warn user
 else
-  echo "WARNING: REPLICATION_SERVER_ID is not 1, but MASTER_HOST is not set."
+  echo "WARNING: Server not configured as master or slave."
   echo "The server will be configured as a standalone instance."
-  echo "To configure as a slave, set MASTER_HOST environment variable."
+  echo "To configure as a master, set REPLICATION_SERVER=master or use REPLICATION_SERVER_ID=1."
+  echo "To configure as a slave, set REPLICATION_SERVER=slave or set MASTER_HOST environment variable."
 fi
 
 cat > /etc/mysql/mysql.conf.d/server-id.cnf << EOF

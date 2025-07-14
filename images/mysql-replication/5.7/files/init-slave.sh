@@ -22,14 +22,27 @@ check_slave_health () {
 }
 
 
-echo Updating master connetion info in slave.
+echo Updating master connection info in slave.
 
-mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "RESET MASTER; \
-  CHANGE MASTER TO \
-  MASTER_HOST='$MASTER_HOST', \
-  MASTER_PORT=$MASTER_PORT, \
-  MASTER_USER='$REPLICATION_USER', \
-  MASTER_PASSWORD='$REPLICATION_PASSWORD';"
+# Skip RESET MASTER if this server is also a master (for master-master replication)
+if [ "$REPLICATION_SERVER" = "master" ]; then
+  echo "This server is also configured as a master, skipping RESET MASTER..."
+  mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "\
+    CHANGE MASTER TO \
+    MASTER_HOST='$MASTER_HOST', \
+    MASTER_PORT=$MASTER_PORT, \
+    MASTER_USER='$REPLICATION_USER', \
+    MASTER_PASSWORD='$REPLICATION_PASSWORD', \
+    MASTER_AUTO_POSITION=1;"
+else
+  mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "RESET MASTER; \
+    CHANGE MASTER TO \
+    MASTER_HOST='$MASTER_HOST', \
+    MASTER_PORT=$MASTER_PORT, \
+    MASTER_USER='$REPLICATION_USER', \
+    MASTER_PASSWORD='$REPLICATION_PASSWORD', \
+    MASTER_AUTO_POSITION=1;"
+fi
 
 mysqldump \
   --protocol=tcp \

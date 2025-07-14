@@ -24,13 +24,25 @@ check_replica_health () {
 
 echo Updating source connection info in replica.
 
-mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "RESET MASTER; \
-  CHANGE REPLICATION SOURCE TO \
-  SOURCE_HOST='$MASTER_HOST', \
-  SOURCE_PORT=$MASTER_PORT, \
-  SOURCE_USER='$REPLICATION_USER', \
-  SOURCE_PASSWORD='$REPLICATION_PASSWORD', \
-  SOURCE_AUTO_POSITION=1;"
+# Skip RESET MASTER if this server is also a source (for source-source replication)
+if [ "$REPLICATION_SERVER" = "master" ]; then
+  echo "This server is also configured as a source (master), skipping RESET MASTER..."
+  mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "\
+    CHANGE REPLICATION SOURCE TO \
+    SOURCE_HOST='$MASTER_HOST', \
+    SOURCE_PORT=$MASTER_PORT, \
+    SOURCE_USER='$REPLICATION_USER', \
+    SOURCE_PASSWORD='$REPLICATION_PASSWORD', \
+    SOURCE_AUTO_POSITION=1;"
+else
+  mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "RESET MASTER; \
+    CHANGE REPLICATION SOURCE TO \
+    SOURCE_HOST='$MASTER_HOST', \
+    SOURCE_PORT=$MASTER_PORT, \
+    SOURCE_USER='$REPLICATION_USER', \
+    SOURCE_PASSWORD='$REPLICATION_PASSWORD', \
+    SOURCE_AUTO_POSITION=1;"
+fi
 
 mysqldump \
   --protocol=tcp \

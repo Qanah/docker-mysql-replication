@@ -20,26 +20,40 @@ The following environment variables can be used to configure the MySQL replicati
 | REPLICATION_USER | Username for replication | replication |
 | REPLICATION_PASSWORD | Password for replication user | replication_pass |
 | REPLICATION_SERVER_ID | Server ID for replication | 1 |
+| REPLICATION_SERVER | Server role (master or slave) | (determined by REPLICATION_SERVER_ID) |
 | MASTER_HOST | Hostname of the master server | (not set) |
 | MASTER_PORT | Port of the master server | (MySQL default) |
 
 ### Server Configuration
 
 #### MySQL 5.7
-- If `REPLICATION_SERVER_ID=1`, the server will be configured as a master
-- If `REPLICATION_SERVER_ID` is not 1 (e.g., 2, 3, 4...) and `MASTER_HOST` is set, the server will be configured as a slave
-- If `REPLICATION_SERVER_ID` is not 1 but `MASTER_HOST` is not set, the server will be configured as a standalone instance
+The server role is determined by the following rules (in order of precedence):
+
+1. If `REPLICATION_SERVER=master`, the server will be configured as a master
+2. If `REPLICATION_SERVER=slave`, the server will be configured as a slave (requires `MASTER_HOST` to be set)
+3. If `REPLICATION_SERVER` is not set:
+   - If `REPLICATION_SERVER_ID=1`, the server will be configured as a master
+   - If `REPLICATION_SERVER_ID` is not 1 and `MASTER_HOST` is set, the server will be configured as a slave
+   - Otherwise, the server will be configured as a standalone instance
 
 #### MySQL 8.0
-- If `REPLICATION_SERVER_ID=1`, the server will be configured as a source (master)
-- If `REPLICATION_SERVER_ID` is not 1 (e.g., 2, 3, 4...) and `MASTER_HOST` is set, the server will be configured as a replica (slave)
-- If `REPLICATION_SERVER_ID` is not 1 but `MASTER_HOST` is not set, the server will be configured as a standalone instance
+The server role is determined by the following rules (in order of precedence):
 
-Note: MySQL 8.0 uses the terms "source" and "replica" instead of "master" and "slave", but the environment variable `MASTER_HOST` is kept for backward compatibility.
+1. If `REPLICATION_SERVER=master`, the server will be configured as a source (master)
+2. If `REPLICATION_SERVER=slave`, the server will be configured as a replica (slave) (requires `MASTER_HOST` to be set)
+3. If `REPLICATION_SERVER` is not set:
+   - If `REPLICATION_SERVER_ID=1`, the server will be configured as a source (master)
+   - If `REPLICATION_SERVER_ID` is not 1 and `MASTER_HOST` is set, the server will be configured as a replica (slave)
+   - Otherwise, the server will be configured as a standalone instance
+
+Note: MySQL 8.0 uses the terms "source" and "replica" instead of "master" and "slave", but the environment variables `MASTER_HOST` and `REPLICATION_SERVER` (with values "master"/"slave") are kept for backward compatibility.
+
+#### Master-Master (Source-Source) Replication
+For master-master replication, set `REPLICATION_SERVER=master` for both servers and also set `MASTER_HOST` to point to the other server. This will configure each server as both a master and a slave.
 
 ### Example Usage
 
-#### Docker Compose Example for MySQL 5.7
+#### Basic Master-Slave Setup (MySQL 5.7)
 
 ```yaml
 version: '3'
@@ -50,6 +64,7 @@ services:
     environment:
       - MYSQL_ROOT_PASSWORD=root_password
       - REPLICATION_SERVER_ID=1
+      # Alternatively, you can use REPLICATION_SERVER=master
     ports:
       - "3306:3306"
     volumes:
@@ -60,6 +75,7 @@ services:
     environment:
       - MYSQL_ROOT_PASSWORD=root_password
       - REPLICATION_SERVER_ID=2
+      # Alternatively, you can use REPLICATION_SERVER=slave
       - MASTER_HOST=mysql-master
     ports:
       - "3307:3306"
@@ -73,7 +89,7 @@ volumes:
   mysql-slave1-data:
 ```
 
-#### Docker Compose Example for MySQL 8.0
+#### Basic Source-Replica Setup (MySQL 8.0)
 
 ```yaml
 version: '3'
@@ -84,6 +100,7 @@ services:
     environment:
       - MYSQL_ROOT_PASSWORD=root_password
       - REPLICATION_SERVER_ID=1
+      # Alternatively, you can use REPLICATION_SERVER=master
     ports:
       - "3306:3306"
     volumes:
@@ -94,6 +111,7 @@ services:
     environment:
       - MYSQL_ROOT_PASSWORD=root_password
       - REPLICATION_SERVER_ID=2
+      # Alternatively, you can use REPLICATION_SERVER=slave
       - MASTER_HOST=mysql-source
     ports:
       - "3307:3306"
@@ -105,6 +123,130 @@ services:
 volumes:
   mysql-source-data:
   mysql-replica1-data:
+```
+
+#### Master-Master Replication (MySQL 5.7)
+
+```yaml
+version: '3'
+
+services:
+  mysql-master1:
+    image: your-dockerhub-username/mysql-replication:5.7-latest
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - REPLICATION_SERVER_ID=1
+      - REPLICATION_SERVER=master
+      - MASTER_HOST=mysql-master2
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-master1-data:/var/lib/mysql
+
+  mysql-master2:
+    image: your-dockerhub-username/mysql-replication:5.7-latest
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - REPLICATION_SERVER_ID=2
+      - REPLICATION_SERVER=master
+      - MASTER_HOST=mysql-master1
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-master2-data:/var/lib/mysql
+    depends_on:
+      - mysql-master1
+
+volumes:
+  mysql-master1-data:
+  mysql-master2-data:
+```
+
+#### Source-Source Replication (MySQL 8.0)
+
+```yaml
+version: '3'
+
+services:
+  mysql-source1:
+    image: your-dockerhub-username/mysql-replication:latest  # or 8.0-latest
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - REPLICATION_SERVER_ID=1
+      - REPLICATION_SERVER=master
+      - MASTER_HOST=mysql-source2
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-source1-data:/var/lib/mysql
+
+  mysql-source2:
+    image: your-dockerhub-username/mysql-replication:latest  # or 8.0-latest
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - REPLICATION_SERVER_ID=2
+      - REPLICATION_SERVER=master
+      - MASTER_HOST=mysql-source1
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-source2-data:/var/lib/mysql
+    depends_on:
+      - mysql-source1
+
+volumes:
+  mysql-source1-data:
+  mysql-source2-data:
+```
+
+#### Multi-Slave Configuration (MySQL 5.7)
+
+```yaml
+version: '3'
+
+services:
+  mysql-master:
+    image: your-dockerhub-username/mysql-replication:5.7-latest
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - REPLICATION_SERVER=master
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-master-data:/var/lib/mysql
+
+  mysql-slave1:
+    image: your-dockerhub-username/mysql-replication:5.7-latest
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - REPLICATION_SERVER_ID=2
+      - REPLICATION_SERVER=slave
+      - MASTER_HOST=mysql-master
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-slave1-data:/var/lib/mysql
+    depends_on:
+      - mysql-master
+
+  mysql-slave2:
+    image: your-dockerhub-username/mysql-replication:5.7-latest
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - REPLICATION_SERVER_ID=3
+      - REPLICATION_SERVER=slave
+      - MASTER_HOST=mysql-master
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql-slave2-data:/var/lib/mysql
+    depends_on:
+      - mysql-master
+
+volumes:
+  mysql-master-data:
+  mysql-slave1-data:
+  mysql-slave2-data:
 ```
 
 ## CI/CD Pipeline
