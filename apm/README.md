@@ -85,7 +85,9 @@ Logstash collects and processes logs from:
 ### PHP Configuration
 
 The PHP application includes:
-- **Elastic APM extension**: Native PHP APM agent
+- **Elastic APM extension**: Native PHP APM agent v1.15.1 (latest)
+- **Architecture detection**: Automatically downloads correct package (AMD64/ARM64)
+- **Proper FPM configuration**: Fixed logging with separate configuration files
 - **Error logging**: Configured to log to shared volume
 - **Sample endpoints**: Health check and error generation
 
@@ -187,8 +189,20 @@ docker-compose --profile setup up -d
 # Check extension status
 curl http://localhost:8080
 
-# Rebuild PHP container
+# Rebuild PHP container with latest APM agent
 docker-compose build php-fpm
+
+# Check APM agent version and architecture
+docker-compose exec php-fpm dpkg -l | grep apm-agent-php
+```
+
+#### PHP-FPM Configuration Errors
+```bash
+# Check PHP-FPM configuration syntax
+docker-compose exec php-fpm php-fpm -t
+
+# View PHP-FPM configuration
+docker-compose exec php-fpm cat /usr/local/etc/php-fpm.d/logging.conf
 ```
 
 ### Viewing Logs
@@ -248,6 +262,23 @@ docker network prune -f
 - Optimize Logstash pipelines for high throughput
 - Use appropriate batch sizes
 - Monitor processing latency
+
+## 🔄 Version Information
+
+### Current Component Versions
+- **Elasticsearch/Kibana/APM Server**: 8.14.0
+- **Logstash**: 8.14.0
+- **PHP APM Agent**: v1.15.1 (auto-detected architecture)
+- **Node.js APM Agent**: v4.5.0
+- **PHP**: 8.2-fpm
+- **Node.js**: 20
+- **Nginx**: Alpine latest
+
+### Recent Updates
+- Updated to PHP APM agent v1.15.1 with architecture detection
+- Fixed PHP-FPM configuration with proper logging setup
+- Added automatic AMD64/ARM64 package selection
+- Improved error handling and extension loading
 
 ## 🔒 Security Notes
 
