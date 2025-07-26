@@ -1,0 +1,116 @@
+version: '3.8'
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=true
+      - xpack.security.authc.api_key.enabled=true
+      - xpack.license.self_generated.type=basic
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - ELASTIC_PASSWORD=elastic123
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -u elastic:elastic123 -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  elasticsearch-setup:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.0
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    command: >
+      bash -c '
+        echo "Setting up built-in users..."
+        curl -u elastic:elastic123 -X POST "http://elasticsearch:9200/_security/user/kibana_system/_password" \
+          -H "Content-Type: application/json" \
+          -d "{\"password\":\"kibana123\"}"
+        echo "Setup completed"
+      '
+    profiles:
+      - setup
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.14.0
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - ELASTICSEARCH_PASSWORD=kibana123
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    restart: on-failure
+
+  apm-server:
+    image: docker.elastic.co/apm/apm-server:8.14.0
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    ports:
+      - "8200:8200"
+    command: >
+      apm-server -e
+        -E apm-server.host=0.0.0.0:8200
+        -E output.elasticsearch.hosts=["http://elasticsearch:9200"]
+        -E output.elasticsearch.username=elastic
+        -E output.elasticsearch.password=elastic123
+        -E setup.kibana.host="kibana:5601"
+        -E setup.kibana.username=elastic
+        -E setup.kibana.password=elastic123
+    environment:
+      - output.elasticsearch.enabled=true
+
+  php-fpm:
+    build:
+      context: ./php
+    environment:
+      - ELASTIC_APM_SERVER_URL=http://apm-server:8200
+      - ELASTIC_APM_SERVICE_NAME=php-app
+      - ELASTIC_APM_ENVIRONMENT=production
+      - ELASTIC_APM_ENABLED=1
+    volumes:
+      - ./php:/var/www/html
+    depends_on:
+      - apm-server
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./php:/var/www/html
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php-fpm
+
+  node-app:
+    build:
+      context: ./node
+    environment:
+      - ELASTIC_APM_SERVER_URL=http://apm-server:8200
+      - ELASTIC_APM_SERVICE_NAME=node-app
+      - ELASTIC_APM_ENVIRONMENT=production
+    depends_on:
+      - apm-server
+    ports:
+      - "3000:3000"
+
+volumes:
+  esdata:
