@@ -25,6 +25,13 @@ RUN echo "extension=elastic_apm.so" > /usr/local/etc/php/conf.d/99-elastic-apm.i
     && echo "elastic_apm.service_name=php-app" >> /usr/local/etc/php/conf.d/99-elastic-apm.ini \
     && echo "elastic_apm.log_level=INFO" >> /usr/local/etc/php/conf.d/99-elastic-apm.ini
 
+# Configure PHP-FPM logging
+RUN echo "log_level = notice" >> /usr/local/etc/php-fpm.conf \
+    && echo "error_log = /var/log/php/php-fpm.log" >> /usr/local/etc/php-fpm.conf \
+    && echo "log_errors = On" >> /usr/local/etc/php/conf.d/99-logging.ini \
+    && echo "error_log = /var/log/php/error.log" >> /usr/local/etc/php/conf.d/99-logging.ini \
+    && mkdir -p /var/log/php
+
 WORKDIR /var/www/html
 
 EXPOSE 9000

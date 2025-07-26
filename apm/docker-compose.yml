@@ -77,6 +77,22 @@ services:
     environment:
       - output.elasticsearch.enabled=true
 
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.14.0
+    volumes:
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - php-logs:/var/log/php
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=elastic123
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    ports:
+      - "5044:5044"
+
   php-fpm:
     build:
       context: ./php
@@ -87,6 +103,7 @@ services:
       - ELASTIC_APM_ENABLED=1
     volumes:
       - ./php:/var/www/html
+      - php-logs:/var/log/php
     depends_on:
       - apm-server
 
@@ -114,3 +131,4 @@ services:
 
 volumes:
   esdata:
+  php-logs:
